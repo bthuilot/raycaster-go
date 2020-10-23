@@ -20,22 +20,16 @@ func RaycasterLoop(world *World, imd *imdraw.IMDraw) {
 		mapX := int(world.playerPos.x)
 		mapY := int(world.playerPos.y)
 
-		var sideDistX float64
-		var sideDistY float64
 
 		deltaDistX := math.Abs(1 / rayDirX)
 		deltaDistY := math.Abs(1 / rayDirY)
-		var prepWallDist float64
-
-		var stepX int
-		var stepY int
 
 		hit := 0
+
+		stepX, sideDistX := calculateStepAndSideDist(rayDirX, world.playerPos.x, float64(mapX), deltaDistX)
+		stepY, sideDistY := calculateStepAndSideDist(rayDirY, world.playerPos.y, float64(mapY), deltaDistY)
+
 		var side int
-
-		stepX, sideDistX = calculateStepAndSideDist(rayDirX, world.playerPos.x, float64(mapX), deltaDistX)
-		stepY, sideDistY = calculateStepAndSideDist(rayDirY, world.playerPos.y, float64(mapY), deltaDistY)
-
 		// DDA
 		for hit == 0  {
 			if sideDistX < sideDistY {
@@ -52,6 +46,7 @@ func RaycasterLoop(world *World, imd *imdraw.IMDraw) {
 			}
 		}
 
+		var prepWallDist float64
 		if side == 0 {
 			prepWallDist = calculatePrepWallDist(float64(mapX), world.playerPos.x, float64(stepX), rayDirX)
 		} else {
