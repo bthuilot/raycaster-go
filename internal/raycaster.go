@@ -2,15 +2,13 @@ package internal
 
 import (
 	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
-	"golang.org/x/image/colornames"
 	color2 "image/color"
 	"math"
 	"time"
 )
 
-func RaycasterLoop(world *World, imd *imdraw.IMDraw) {
+func RaycasterLoop(world *World, buffer *pixel.PictureData) {
 	for x := 0; x < ScreenWidth; x += 1 {
 		cameraX := float64(2 * x)/ float64(ScreenWidth) - 1
 		rayDirX := world.playerDir.x + world.cameraPlane.x * cameraX
@@ -64,33 +62,47 @@ func RaycasterLoop(world *World, imd *imdraw.IMDraw) {
 		if drawEnd >= ScreenHeight {
 			drawEnd = ScreenHeight - 1
 		}
-		
-		var color color2.RGBA
-		switch world.worldMap[mapX][mapY] {
-		case 1:
-			color = colornames.Red
-		case 2:
-			color = colornames.Green
-		case 3:
-			color = colornames.Blue
-		case 4:
-			color = colornames.White
-		default:
-			color = colornames.Yellow
+
+		texNum := world.worldMap[mapX][mapY] - 1
+		texture := world.textures[texNum]
+		bounds := texture.Bounds()
+		texH := bounds.H()
+		texW := bounds.W()
+
+
+		var wallX float64
+		if side == 0 {
+			wallX = world.playerPos.y + prepWallDist * rayDirY
+		} else {
+			wallX = world.playerPos.x + prepWallDist * rayDirX
 		}
 
-		if side == 1 {
-			color = color2.RGBA{
-				R: color.R/2,
-				B: color.B/2,
-				G: color.G/2,
-				A: color.A/2,
+		wallX -= math.Floor(wallX)
+
+		texX := int(wallX * texW)
+		if (side == 0 && rayDirX > 0) || (side == 1 && rayDirY < 0){
+			texX = TextureWidth - texX - 1
+		}
+
+		step := texH / float64(lineHeight)
+		texPos := float64(drawStart - ScreenHeight/2 + lineHeight/ 2) * step
+
+		for y := drawStart; y < drawEnd; y++ {
+			texY := int(texPos) & (int(texH) - 1)
+			texPos += step
+			texIndex := world.textures[texNum].Index(pixel.V(float64(texX), float64(texY)))
+			color := world.textures[texNum].Pix[texIndex]
+			if side == 1 {
+				color = color2.RGBA{
+					R: color.R/2,
+					B: color.B/2,
+					G: color.G/2,
+					A: color.A/2,
+				}
 			}
+			index := buffer.Index(pixel.V(float64(x), float64(y)))
+			buffer.Pix[index] = color
 		}
-
-		imd.Color = color
-		imd.Push(pixel.V(float64(x), float64(drawStart)), pixel.V(float64(x), float64(drawEnd)))
-		imd.Line(1)
 	}
 }
 

@@ -8,7 +8,6 @@ go run cmd/go-caster.go
 ```
 
 ### TODO
-
-- Add ability to texture walls
+- Add sprites
 - Ceiling and floor
-- Set resolution
+- Improve speed
